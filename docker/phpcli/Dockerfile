@@ -9,5 +9,10 @@ RUN apt-get install -y \
         zip \
   && docker-php-ext-install zip
 
+RUN \
+    docker-php-ext-configure pdo_mysql --with-pdo-mysql=mysqlnd \
+    && docker-php-ext-configure mysqli --with-mysqli=mysqlnd \
+    && docker-php-ext-install pdo_mysql
+
 COPY . /app
 WORKDIR /app

@@ -4,6 +4,7 @@
 namespace App\Service\MovieDB\Model;
 
 
+use JetBrains\PhpStorm\Pure;
 use Normalizer;
 
 class SpaceModel
@@ -29,11 +30,28 @@ class SpaceModel
     }
 
     public function remove() {
-
+        rmdir($this->path);
+        if($this->isParentEmpty()) {
+            $this->removeParent();
+        }
     }
 
-    public function isEmpty($dir): bool
+    public function isEmpty(): bool
     {
+        return $this->isDirEmpty($this->path);
+    }
+
+    private function isParentEmpty()
+    {
+        return $this->isDirEmpty(dirname($this->path));
+    }
+
+    private function removeParent()
+    {
+        rmdir(dirname($this->path));
+    }
+
+    private function isDirEmpty($dir) {
         $handle = opendir($dir);
         while (false !== ($entry = readdir($handle))) {
             if ($entry != "." && $entry != "..") {
@@ -43,5 +61,15 @@ class SpaceModel
         }
         closedir($handle);
         return true;
+    }
+
+    public function getTopFiles(): array
+    {
+        return array_map('basename', glob($this->path . DIRECTORY_SEPARATOR . "*"));
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
     }
 }

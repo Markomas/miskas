@@ -30,6 +30,7 @@ class StorageModel
     #[Pure] public function getAll(): \Generator
     {
         $directories = glob($this->path . '/*' , GLOB_ONLYDIR);
+
         foreach($directories as $directory) {
             $subDirectories = glob($directory . '/*' , GLOB_ONLYDIR);
             foreach($subDirectories as $subDirectory) {
