@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  phpcli:
+    build: docker/phpcli/
+    volumes:
+      - .:/app
+      - ./var/data:/app/var/data
+
