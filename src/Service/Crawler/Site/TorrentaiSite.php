@@ -47,6 +47,7 @@ class TorrentaiSite implements SiteInterface
     public function login(): bool {
         $crawler = $this->client->request('GET', $this->urlLogin);
         $html = $crawler->html();
+
         if(!str_contains($html, 'Santykis')) {
             $this->logger->log(LogLevel::WARNING, 'Torrentai login failed');
             return false;
@@ -59,8 +60,9 @@ class TorrentaiSite implements SiteInterface
         $out = new TorrentModelArray();
         $crawler = $this->client->request('GET', str_replace('{{page}}', $page, $this->urlList));
         $torrentPages = $crawler
-            ->filter('table')
+            ->filter('table.torrents_table')
             ->filter('tr')
+            ->filter('.torrent_name.torrent_info')
             ->filter('a')
             ->each(
                 function (Crawler $row) {
@@ -68,15 +70,11 @@ class TorrentaiSite implements SiteInterface
                 }
             );
         foreach ($torrentPages as $link) {
-            if (strpos($link, 'details?') !== 0) {
+
+            if (!preg_match('/t(\d+)/', $link, $matches)) {
                 continue;
             }
-
-            if (!preg_match('/details\?(\d+)/', $link, $matches)) {
-                continue;
-            }
-
-            $id = intval(str_replace('details?', '', $matches[0]));
+            $id = intval(str_replace('t', '', $matches[0]));
 
             if(isset($out[$this->clientId . '_' . $id])) {
                 continue;
@@ -126,6 +124,7 @@ class TorrentaiSite implements SiteInterface
             return null;
         }
         $title = trim($matches[1]);
+        $title = str_replace('Torrent.lt - ', '', $title);
 
         $torrent = new TorrentModel();
         $torrent->setTitle($title);

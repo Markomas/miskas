@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\StorageSpaceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
@@ -19,6 +21,11 @@ class StorageSpace
      * @ORM\Column(type="integer")
      */
     private ?int $id;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $name;
 
     /**
      * @ORM\Column(type="string", length=1024)
@@ -44,6 +51,16 @@ class StorageSpace
      * @ORM\Column(type="boolean")
      */
     private bool $isScanned = false;
+
+    /**
+     * @ORM\OneToMany(targetEntity=StorageFile::class, mappedBy="storage")
+     */
+    private $storageFiles;
+
+    public function __construct()
+    {
+        $this->storageFiles = new ArrayCollection();
+    }
 
 
     public function getId(): ?int
@@ -107,6 +124,48 @@ class StorageSpace
     public function setIsScanned(bool $isScanned): self
     {
         $this->isScanned = $isScanned;
+
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(?string $name): self
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|StorageFile[]
+     */
+    public function getStorageFiles(): Collection
+    {
+        return $this->storageFiles;
+    }
+
+    public function addStorageFile(StorageFile $storageFile): self
+    {
+        if (!$this->storageFiles->contains($storageFile)) {
+            $this->storageFiles[] = $storageFile;
+            $storageFile->setStorage($this);
+        }
+
+        return $this;
+    }
+
+    public function removeStorageFile(StorageFile $storageFile): self
+    {
+        if ($this->storageFiles->removeElement($storageFile)) {
+            // set the owning side to null (unless already changed)
+            if ($storageFile->getStorage() === $this) {
+                $storageFile->setStorage(null);
+            }
+        }
 
         return $this;
     }

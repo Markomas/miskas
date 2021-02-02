@@ -33,12 +33,14 @@ class Crawler
             $page = 0;
 
             if(!$site->setConfig($config)) continue;
-            //if(!$site->login()) continue;
-            //if(!$torrents = $site->scrap($page)) continue;
-            //file_put_contents('test.dat', serialize($torrents));
-            $torrents = unserialize(file_get_contents('test.dat'));
-            $this->persist($torrents);
-            return;
+            if(!$site->login()) continue;
+            for($page = 0; $page < 10; $page++) {
+                if (!$torrents = $site->scrap($page)) {
+                    continue;
+                }
+                $this->persist($torrents);
+            }
+
             if(!$site->logout()) continue;
         }
     }

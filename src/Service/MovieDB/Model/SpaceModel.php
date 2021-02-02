@@ -4,6 +4,7 @@
 namespace App\Service\MovieDB\Model;
 
 
+use Exception;
 use JetBrains\PhpStorm\Pure;
 use Normalizer;
 
@@ -22,6 +23,21 @@ class SpaceModel
         $data = json_encode($value, JSON_PRETTY_PRINT);
         if(!$data) return false;
         return file_put_contents($file, $data);
+    }
+
+    public function loadValue(string $name) {
+        $name = preg_replace('/[^a-zA-Z0-9_.]/', '', $name);
+        $file = $this->path . DIRECTORY_SEPARATOR . $name . '.json';
+        if(!file_exists($file)) return null;
+        return json_decode(file_get_contents($file), true);
+    }
+
+    public function getFilePath(string $name): string|null
+    {
+        if(!file_exists($this->path . DIRECTORY_SEPARATOR . $name)) {
+            return null;
+        }
+        return $this->path . DIRECTORY_SEPARATOR . $name;
     }
 
     public function storeFile(string $name, $file): bool
@@ -71,5 +87,16 @@ class SpaceModel
     public function getPath(): string
     {
         return $this->path;
+    }
+
+    public function getFolder(string $name)
+    {
+        $path = $this->path . DIRECTORY_SEPARATOR . $name;
+        if(!file_exists($path)) {
+            mkdir($path, 0777);
+        } elseif(!is_dir($path)) {
+            throw new Exception("Bad storage space: Should be folder, but got file: " . $path);
+        }
+        return $path;
     }
 }

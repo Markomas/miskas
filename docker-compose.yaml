@@ -5,9 +5,12 @@ services:
     build: docker/phpcli/
     depends_on:
       - db
+      - redis
     volumes:
       - .:/app
       - ./var/data:/app/var/data
+      - miskas_composer:/root/.composer/
+
   db:
     image: mariadb:10.5.8
     restart: always
@@ -21,6 +24,13 @@ services:
       MYSQL_USER: ${DATABASE_USER}
       MYSQL_PASSWORD: ${DATABASE_PASSWORD}
 
+  redis:
+    image: redis:6.0.10
+    command: redis-server --appendonly yes
+    volumes:
+      - miskas_redis:/data
 
 volumes:
   miskas_db:
+  miskas_composer:
+  miskas_redis:

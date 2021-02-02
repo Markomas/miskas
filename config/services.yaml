@@ -32,13 +32,23 @@ services:
     Goutte\Client:
         class: Goutte\Client
 
+    Redis:
+        class: Redis
+        calls:
+            - pconnect: ['redis']
+
+    Symfony\Component\Lock\Store\RedisStore:
+        arguments:
+            - '@Redis'
+
+    Symfony\Component\Lock\LockFactory:
+        arguments:
+            - '@Symfony\Component\Lock\Store\RedisStore'
+
     App\Service\MovieDB\MovieDB:
         arguments:
             $rootDirectory: '%env(MOVIE_DIR)%'
 
-    App\Service\MovieDB\Lock:
-        arguments:
-            $rootDirectory: '%env(MOVIE_DIR)%'
 
     App\Service\MovieDB\Indexer:
         arguments:

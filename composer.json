@@ -7,6 +7,7 @@
         "php": ">=8",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-redis": "*",
         "composer/package-versions-deprecated": "1.11.99.1",
         "doctrine/doctrine-bundle": "^2.2",
         "doctrine/doctrine-migrations-bundle": "^3.0",
@@ -16,9 +17,12 @@
         "symfony/dotenv": "5.2.*",
         "symfony/flex": "^1.3.1",
         "symfony/framework-bundle": "5.2.*",
+        "symfony/lock": "5.2.*",
+        "symfony/process": "5.2.*",
         "symfony/proxy-manager-bridge": "5.2.*",
         "symfony/validator": "5.2.*",
-        "symfony/yaml": "5.2.*"
+        "symfony/yaml": "5.2.*",
+        "thcolin/scene-release-parser": "dev-master"
     },
     "require-dev": {
         "symfony/maker-bundle": "^1.28"
@@ -65,5 +69,20 @@
             "allow-contrib": false,
             "require": "5.2.*"
         }
-    }
+    },
+
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Markomas/scene-release-parser-php"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/Markomas/transmission-php.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/Markomas/shaka-php.git"
+        }
+    ]
 }

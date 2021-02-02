@@ -47,4 +47,23 @@ class StorageSpaceRepository extends ServiceEntityRepository
         ;
     }
     */
+    public function findNextToDownload($offset = 0): ?StorageSpace
+    {
+        return $this->createQueryBuilder('s')
+            ->innerJoin('s.storageFiles', 'f')
+            ->andWhere('s.isDownloaded = :isDownloaded')
+            ->andWhere('s.isScanned = :isScanned')
+            ->andWhere('s.isSkiped = :isSkiped')
+            ->andWhere('f.isSkipped = :isSkipped')
+            ->setParameter('isDownloaded', false)
+            ->setParameter('isScanned', true)
+            ->setParameter('isSkiped', false)
+            ->setParameter('isSkipped', false)
+            ->orderBy('s.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult()
+            ;
+    }
 }

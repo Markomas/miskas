@@ -4,10 +4,12 @@
 namespace App\Service\MovieDB;
 
 
+use App\Entity\StorageSpace;
 use App\Service\Crawler\Model\TorrentModel;
 use App\Service\MovieDB\Model\SpaceModel;
 use App\Service\MovieDB\Model\StorageModel;
 use App\Service\MovieDB\Model\StorageModelArray;
+use JetBrains\PhpStorm\Pure;
 
 class Database
 {
@@ -30,7 +32,7 @@ class Database
         $this->scanStorage();
     }
 
-    public function insertTorrent(TorrentModel $torrent)
+    public function insertTorrent(TorrentModel $torrent): string
     {
         $uniqid = $torrent->getClient() . '_' . $torrent->getId();
         $uniqid = hash('sha256', $uniqid);
@@ -45,6 +47,12 @@ class Database
         unset($data['file']);
         $this->insertValue($space, $data, self::TYPE_TORRENT);
         $this->indexer->add($space);
+        return $space->getPath();
+    }
+
+    public function getTorrentFilePath(string $path): ?string
+    {
+        return (new SpaceModel($path))->getFilePath('torrent.torrent');
     }
 
     private function scanStorage()
@@ -73,6 +81,10 @@ class Database
         return $storage->getSpace($uniqid);
     }
 
+    #[Pure] private function getSpaceForPath(string $path): SpaceModel {
+        return new SpaceModel($path);
+    }
+
     private function insertFile(SpaceModel $space, string $name, $file): bool
     {
         return $space->storeFile($name, $file);
@@ -83,5 +95,25 @@ class Database
         return $space->storeValue($type, $value);
     }
 
+    public function insertStorageFile(array $storageFile, string $path)
+    {
+        $space = $this->getSpaceForPath($path);
+        $value = $space->loadValue('files');
+        if(!$value) $value = [];
+        //$value = [];
+        foreach($storageFile as $key=>$file) {
+            $value[$key] = $file->toArray();
+        }
+        $space->storeValue('files', $value);
+    }
 
+    public function loadValue(string $path, string $name): ?array
+    {
+        return (new SpaceModel($path))->loadValue($name);
+    }
+
+    public function getDownloadPath(?string $path)
+    {
+        return (new SpaceModel($path))->getFolder('downloads');
+    }
 }

@@ -4,13 +4,16 @@
 namespace App\Service\MovieDB;
 
 
+use App\Entity\StorageFile;
 use App\Entity\StorageSpace;
+use App\Repository\StorageFileRepository;
 use App\Service\MovieDB\Model\SpaceModel;
 use App\Service\MovieDB\Model\SpaceModelArray;
 use App\Service\MovieDB\Model\StorageModel;
 use App\Service\MovieDB\Model\StorageModelArray;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Lock\LockFactory;
 
 class Indexer
 {
@@ -19,10 +22,6 @@ class Indexer
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
-    /**
-     * @var Lock
-     */
-    private Lock $lock;
     /**
      * @var StorageModelArray
      */
@@ -35,23 +34,29 @@ class Indexer
      * @var EntityManagerInterface
      */
     private EntityManagerInterface $entityManager;
+    private StorageFileRepository $storageFileRepository;
+    private \Symfony\Component\Lock\LockInterface $lock;
 
-    public function __construct(string $rootDirectory, Lock $lock, EntityManagerInterface $entityManager, LoggerInterface $logger) {
+    public function __construct(string $rootDirectory, LockFactory $lockFactory, EntityManagerInterface $entityManager, LoggerInterface $logger) {
         $this->rootDirectory = rtrim($rootDirectory, DIRECTORY_SEPARATOR);
         $this->logger = $logger;
-        $this->lock = $lock;
         $this->entities = new SpaceModelArray();
         $this->entityManager = $entityManager;
+        $this->storageFileRepository = $this->entityManager->getRepository(StorageFile::class);
+        $this->lock = $lockFactory->createLock('movie_database');
     }
 
     public function reindex()
     {
-        $this->lock->lock();
+        while(!$this->lock->acquire()) {
+            $this->logger->warning('MovieDB indexer: db locked, waiting');
+            sleep(10);
+        }
         $this->scanStorage();
         $this->scanEntities();
         $this->storeEntities();
         $this->reportUnusedEntities();
-        $this->lock->unlock();
+        $this->lock->release();
     }
 
     private function scanStorage()
@@ -60,6 +65,7 @@ class Indexer
         $directories = glob($this->rootDirectory . '/*' , GLOB_ONLYDIR);
         $this->storageList = new StorageModelArray();
         foreach ($directories as $directory) {
+            $this->lock->refresh();
             $this->storageList[$directory] = new StorageModel($directory);
         }
     }
@@ -69,6 +75,7 @@ class Indexer
         $this->logger->info('MovieDB indexer: Scanning entities');
         foreach ($this->storageList as $storage) {
             foreach($storage->getAll() as $entity) {
+                $this->lock->refresh();
                 if($entity->isEmpty()) {
                     $entity->remove();
                     continue;
@@ -82,6 +89,7 @@ class Indexer
     {
         $this->logger->info('MovieDB indexer: Storing entities');
         foreach ($this->entities as $entity) {
+            $this->lock->refresh();
             $this->add($entity);
         }
     }
@@ -93,9 +101,27 @@ class Indexer
             $storageSpace->setSpace($model->getPath());
         }
 
-        if(in_array('torrent.torrent', $model->getTopFiles())) {
+        if(in_array('torrent.json', $model->getTopFiles())) {
+            $torrentData = $model->loadValue('torrent');
+            $name = $torrentData['title'] ?? null;
+            $storageSpace->setName($name);
             $storageSpace->setSpace($model->getPath());
             $storageSpace->setType(StorageSpace::TYPE_TORRENT);
+        }
+
+        if(in_array('files.json', $model->getTopFiles())) {
+            $storageSpace->setIsScanned(true);
+            $torrentData = $model->loadValue('files');
+            foreach ($torrentData as $path => $torrentFile) {
+                $storageFile = $this->storageFileRepository->findOneBy(['path' => $path, 'storage' => $storageSpace]);
+                if(!$storageFile) {
+                    $storageFile = new StorageFile();
+                }
+                $storageFile->setStorage($storageSpace);
+                unset($torrentFile['storage']);
+                $storageFile->loadFromArray($torrentFile);
+                $this->entityManager->persist($storageFile);
+            }
         }
 
         $this->entityManager->persist($storageSpace);
@@ -106,7 +132,9 @@ class Indexer
     {
         $this->logger->info('MovieDB indexer: Searching for unused entities');
         $storageSpace = $this->entityManager->getRepository(StorageSpace::class)->findAll();
+        $this->logger->info('MovieDB indexer: Storage entities count:' . count($storageSpace));
         foreach($storageSpace as $space) {
+            $this->lock->refresh();
             if(!isset($this->entities[$space->getSpace()])) {
                 $this->logger->warning('MovieDB indexer: non-existing storage space in db: ' . $space->getId());
             }

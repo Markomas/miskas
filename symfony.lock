@@ -93,6 +93,9 @@
     "laminas/laminas-zendframework-bridge": {
         "version": "1.1.1"
     },
+    "mhor/php-mediainfo": {
+        "version": "5.4.1"
+    },
     "nikic/php-parser": {
         "version": "v4.10.4"
     },
@@ -212,6 +215,18 @@
     "symfony/http-kernel": {
         "version": "v5.2.2"
     },
+    "symfony/lock": {
+        "version": "5.2",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "master",
+            "version": "5.2",
+            "ref": "13350583a83fa636bf45a5fb62da3bdc73be52a1"
+        },
+        "files": [
+            "config/packages/lock.yaml"
+        ]
+    },
     "symfony/maker-bundle": {
         "version": "1.0",
         "recipe": {
@@ -244,6 +259,9 @@
     },
     "symfony/polyfill-php80": {
         "version": "v1.22.0"
+    },
+    "symfony/process": {
+        "version": "v5.2.2"
     },
     "symfony/proxy-manager-bridge": {
         "version": "v5.2.2"
@@ -295,5 +313,8 @@
     },
     "symfony/yaml": {
         "version": "v5.2.2"
+    },
+    "thcolin/scene-release-parser": {
+        "version": "dev-master"
     }
 }
